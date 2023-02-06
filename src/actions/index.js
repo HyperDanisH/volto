@@ -168,3 +168,4 @@ export {
   removeWorkingCopy,
 } from './workingcopy/workingcopy';
 export { getUserSchema } from './userschema/userschema';
+export { getUpgradeInformation, runUpgrade } from './upgrade/upgrade';

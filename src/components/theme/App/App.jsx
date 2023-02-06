@@ -3,7 +3,7 @@
  * @module components/theme/App/App
  */
 
-import { Component } from 'react';
+import React, { Component } from 'react';
 import jwtDecode from 'jwt-decode';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
@@ -32,7 +32,13 @@ import {
   AppExtras,
   SkipLinks,
 } from '@plone/volto/components';
-import { BodyClass, getBaseUrl, getView, isCmsUi } from '@plone/volto/helpers';
+import {
+  BodyClass,
+  getBaseUrl,
+  getView,
+  hasApiExpander,
+  isCmsUi,
+} from '@plone/volto/helpers';
 import {
   getBreadcrumbs,
   getContent,
@@ -67,6 +73,11 @@ class App extends Component {
     errorInfo: null,
   };
 
+  constructor(props) {
+    super(props);
+    this.mainRef = React.createRef();
+  }
+
   /**
    * @method componentWillReceiveProps
    * @param {Object} nextProps Next properties
@@ -91,6 +102,15 @@ class App extends Component {
     this.setState({ hasError: true, error, errorInfo: info });
     config.settings.errorHandlers.forEach((handler) => handler(error));
   }
+
+  dispatchContentClick = (event) => {
+    if (event.target === event.currentTarget) {
+      const rect = this.mainRef.current.getBoundingClientRect();
+      if (event.clientY > rect.bottom) {
+        document.dispatchEvent(new Event('voltoClickBelowContent'));
+      }
+    }
+  };
 
   /**
    * Render method.
@@ -144,8 +164,12 @@ class App extends Component {
           pathname={this.props.pathname}
           contentLanguage={this.props.content?.language?.token}
         >
-          <Segment basic className="content-area">
-            <main>
+          <Segment
+            basic
+            className="content-area"
+            onClick={this.dispatchContentClick}
+          >
+            <main ref={this.mainRef}>
               <OutdatedBrowser />
               {this.props.connectionRefused ? (
                 <ConnectionRefusedView />
@@ -239,8 +263,15 @@ export default compose(
   asyncConnect([
     {
       key: 'breadcrumbs',
-      promise: ({ location, store: { dispatch } }) =>
-        __SERVER__ && dispatch(getBreadcrumbs(getBaseUrl(location.pathname))),
+      promise: ({ location, store: { dispatch } }) => {
+        // Do not trigger the breadcrumbs action if the expander is present
+        if (
+          __SERVER__ &&
+          !hasApiExpander('breadcrumbs', getBaseUrl(location.pathname))
+        ) {
+          return dispatch(getBreadcrumbs(getBaseUrl(location.pathname)));
+        }
+      },
     },
     {
       key: 'content',
@@ -249,19 +280,32 @@ export default compose(
     },
     {
       key: 'navigation',
-      promise: ({ location, store: { dispatch } }) =>
-        __SERVER__ &&
-        dispatch(
-          getNavigation(
-            getBaseUrl(location.pathname),
-            config.settings.navDepth,
-          ),
-        ),
+      promise: ({ location, store: { dispatch } }) => {
+        // Do not trigger the navigation action if the expander is present
+        if (
+          __SERVER__ &&
+          !hasApiExpander('navigation', getBaseUrl(location.pathname))
+        ) {
+          return dispatch(
+            getNavigation(
+              getBaseUrl(location.pathname),
+              config.settings.navDepth,
+            ),
+          );
+        }
+      },
     },
     {
       key: 'types',
-      promise: ({ location, store: { dispatch } }) =>
-        __SERVER__ && dispatch(getTypes(getBaseUrl(location.pathname))),
+      promise: ({ location, store: { dispatch } }) => {
+        // Do not trigger the types action if the expander is present
+        if (
+          __SERVER__ &&
+          !hasApiExpander('types', getBaseUrl(location.pathname))
+        ) {
+          return dispatch(getTypes(getBaseUrl(location.pathname)));
+        }
+      },
     },
     {
       key: 'workflow',
