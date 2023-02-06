@@ -209,6 +209,11 @@ class Controlpanels extends Component {
             title: this.props.intl.formatMessage(messages.urlmanagement),
           },
           {
+            '@id': '/relations',
+            group: this.props.intl.formatMessage(messages.content),
+            title: this.props.intl.formatMessage(messages.relations),
+          },
+          {
             '@id': '/moderate-comments',
             group: this.props.intl.formatMessage(messages.content),
             title: this.props.intl.formatMessage(messages.moderatecomments),
